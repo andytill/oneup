@@ -5,6 +5,6 @@ Warning: this is a prototype at the moment, so do not use it for anything seriou
 
 To try it out git clone the repo, cd into the directory and run:
 
-  make perfs
+    make perfs
 
 This runs a benchmarks of oneup compared to `ets:update_counter`.

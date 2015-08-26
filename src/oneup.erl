@@ -1,6 +1,7 @@
 -module(oneup).
 
 -export([inc/1]).
+-export([inc2/2]).
 -export([get/1]).
 -export([new_counter/0]).
 
@@ -25,8 +26,12 @@ new_counter() ->
 inc(_) ->
     not_loaded(?LINE).
 
+inc2(_,_) ->
+    not_loaded(?LINE).
+
 get(_) ->
     not_loaded(?LINE).
+
 
 %% internal functions
 

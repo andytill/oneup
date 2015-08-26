@@ -9,3 +9,4 @@ rel/example_project
 .concrete/DEV_MODE
 .rebar
 priv
+c_src/env.mk

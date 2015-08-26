@@ -4,6 +4,8 @@
 
 ERL_NIF_TERM ATOM_OK;
 
+ErlNifResourceType* ONEUP_RESOURCE_TYPE;
+
 // There are four functions that may be called during the lifetime
 // of a NIF. load, reload, upgrade, and unload. Any of these functions
 // can be left unspecified by passing NULL to the ERL_NIF_INIT macro.
@@ -13,9 +15,27 @@ ERL_NIF_TERM ATOM_OK;
 // Return value of 0 indicates success.
 // Docs: http://erlang.org/doc/man/erl_nif.html#load
 
+void
+free_resource(ErlNifEnv* env, void* obj)
+{
+
+}
+
 static int
 load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 {
+    const char* mod = "oneup";
+    const char* name = "oneup";
+    ErlNifResourceFlags flags = ErlNifResourceFlags(
+        ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER
+    );
+
+    ONEUP_RESOURCE_TYPE = enif_open_resource_type(
+        env, mod, name, free_resource, flags, NULL
+    );
+    if(ONEUP_RESOURCE_TYPE == NULL)
+        return -1;
+
     ATOM_OK = enif_make_atom(env, "ok");
 
     return 0;
@@ -28,22 +48,35 @@ load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 static ERL_NIF_TERM
 new_counter(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    std::atomic<long> *value = new std::atomic<long>;
-    value->store(0);
-    long pointer = reinterpret_cast<long>(value);
+    ERL_NIF_TERM ret;
+/*    std::atomic<long> *value = new std::atomic<long>;
+*/
+    std::atomic<long> *value;
 
-    return enif_make_long(env, pointer);
+    value = (std::atomic<long>*)enif_alloc_resource(
+        ONEUP_RESOURCE_TYPE, sizeof(std::atomic<long>)
+    );
+    if(value == NULL)
+        return enif_make_badarg(env);
+    value->store(0);
+
+    ret = enif_make_resource(env, value);
+    enif_release_resource(value);
+
+    return ret;
 }
 
 static ERL_NIF_TERM
 inc(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    long pointer;
-    if (!enif_get_long(env, argv[0], &pointer)) {
+    std::atomic<long> *value;
+
+    if(argc != 1) {
         return enif_make_badarg(env);
     }
-
-    std::atomic<long> *value = (std::atomic<long>*)pointer;
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
     value->operator++();
 
     return ATOM_OK;
@@ -52,12 +85,14 @@ inc(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 static ERL_NIF_TERM
 get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    long pointer;
-    if (!enif_get_long(env, argv[0], &pointer)) {
+    std::atomic<long> *value;
+
+    if(argc != 1) {
         return enif_make_badarg(env);
     }
-
-    std::atomic<long> *value = (std::atomic<long>*)pointer;
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
 
     return enif_make_long(env, value->load());
 }

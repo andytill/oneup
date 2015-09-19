@@ -6,6 +6,11 @@
 -export([inc_if_less_than/3]).
 -export([is_lock_free/0]).
 -export([new_counter/0]).
+-export([num_counters/0]).
+
+-ifdef(TEST).
+-export([infinite_create_oneup/0]).
+-endif.
 
 -on_load(init/0).
 
@@ -50,6 +55,20 @@ get(_) ->
 -spec is_lock_free() -> boolean().
 is_lock_free() ->
     erlang:nif_error(?LINE).
+
+%% Return the counter for the total number oneup counters, that are active
+%% i.e. created and have not yet been garbage collected.
+-spec num_counters() -> integer().
+num_counters() ->
+    erlang:nif_error(?LINE).
+
+-ifdef(TEST).
+%% Infinitely create oneup counters. Leave this running to test for counters
+%% not being garbage collected causing memory leaks.
+infinite_create_oneup() ->
+    C = oneup:new_counter(),oneup:inc(C),
+    infinite_create_oneup().
+-endif.
 
 %%% ============================================================================
 %%% Internal functions

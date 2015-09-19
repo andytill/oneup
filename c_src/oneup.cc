@@ -8,6 +8,10 @@ ERL_NIF_TERM ATOM_FALSE;
 
 ErlNifResourceType* ONEUP_RESOURCE_TYPE;
 
+// holds the value of all oneup counters that have been created
+// and not yet garbage collected.
+std::atomic<long> num_counters_v;
+
 // There are four functions that may be called during the lifetime
 // of a NIF. load, reload, upgrade, and unload. Any of these functions
 // can be left unspecified by passing NULL to the ERL_NIF_INIT macro.
@@ -20,7 +24,7 @@ ErlNifResourceType* ONEUP_RESOURCE_TYPE;
 void
 free_resource(ErlNifEnv* env, void* obj)
 {
-
+    num_counters_v.operator--();
 }
 
 static int
@@ -45,16 +49,10 @@ load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
     return 0;
 }
 
-// The actual C implementation of an Erlang function.
-//
-// Docs: http://erlang.org/doc/man/erl_nif.html#ErlNifFunc
-
 static ERL_NIF_TERM
 new_counter(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM ret;
-/*    std::atomic<long> *value = new std::atomic<long>;
-*/
     std::atomic<long> *value;
 
     value = (std::atomic<long>*)enif_alloc_resource(
@@ -66,6 +64,8 @@ new_counter(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     ret = enif_make_resource(env, value);
     enif_release_resource(value);
+
+    num_counters_v.operator++();
 
     return ret;
 }
@@ -169,13 +169,20 @@ is_lock_free(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     return value.is_lock_free() ? ATOM_TRUE : ATOM_FALSE;
 }
 
+static ERL_NIF_TERM
+num_counters(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    return enif_make_long(env, num_counters_v.load());
+}
+
 static ErlNifFunc nif_funcs[] = {
     {"get", 1, get},
     {"inc", 1, inc},
     {"inc2", 2, inc2},
     {"inc_if_less_than", 3, inc_if_less_than},
     {"is_lock_free", 0, is_lock_free},
-    {"new_counter", 0, new_counter}
+    {"new_counter", 0, new_counter},
+    {"num_counters", 0, num_counters}
 };
 
 // Initialize this NIF library.

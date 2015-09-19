@@ -19,16 +19,15 @@
 %%% ============================================================================
 
 new_counter() ->
-    not_loaded(?LINE).
+    erlang:nif_error(?LINE).
 
 -spec inc(Oneup::oneup()) -> ok.
 inc(_) ->
-    not_loaded(?LINE).
+    erlang:nif_error(?LINE).
 
-
--spec inc(Oneup::oneup(), Increment::integer()) -> ok.
+-spec inc2(Oneup::oneup(), Increment::integer()) -> ok.
 inc2(_,_) ->
-    not_loaded(?LINE).
+    erlang:nif_error(?LINE).
 
 %% Increment this counter by `Inc' if the current value is less than
 %% the value of `Threshold'.
@@ -39,18 +38,18 @@ inc2(_,_) ->
                        Increment::integer(),
                        Threshold::integer()) -> boolean().
 inc_if_less_than(_,_,_) ->
-    not_loaded(?LINE).
+    erlang:nif_error(?LINE).
 
 %%
 -spec get(Oneup::oneup()) -> integer().
 get(_) ->
-    not_loaded(?LINE).
+    erlang:nif_error(?LINE).
 
 %% Check if the underlying atomic implementation for this platform
 %% is actually lock free.
--spec get() -> boolean().
+-spec is_lock_free() -> boolean().
 is_lock_free() ->
-    not_loaded(?LINE).
+    erlang:nif_error(?LINE).
 
 %%% ============================================================================
 %%% Internal functions
@@ -76,12 +75,6 @@ init() ->
                 filename:join(Dir, ?LIBNAME)
         end,
     erlang:load_nif(SoName, 0).
-
-% This is just a simple place holder. It mostly shouldn't ever be called
-% unless there was an unexpected error loading the NIF shared library.
-
-not_loaded(Line) ->
-    exit({not_loaded, [{module, ?MODULE}, {line, Line}]}).
 
 %%% ============================================================================
 %%% Benchmarks

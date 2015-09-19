@@ -3,6 +3,8 @@
 #include <erl_nif.h>
 
 ERL_NIF_TERM ATOM_OK;
+ERL_NIF_TERM ATOM_TRUE;
+ERL_NIF_TERM ATOM_FALSE;
 
 ErlNifResourceType* ONEUP_RESOURCE_TYPE;
 
@@ -37,6 +39,8 @@ load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
         return -1;
 
     ATOM_OK = enif_make_atom(env, "ok");
+    ATOM_TRUE = enif_make_atom(env, "true");
+    ATOM_FALSE = enif_make_atom(env, "false");
 
     return 0;
 }
@@ -103,6 +107,47 @@ inc2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+inc_if_less_than(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::atomic<long> *value;
+    long int inc, threshold;
+
+    if(argc != 3) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_long(env, argv[1], &inc)) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_long(env, argv[2], &threshold)) {
+        return enif_make_badarg(env);
+    }
+
+    // implementation nabbed from the gridgain blog, even better atomic itegers.
+    // it uses spin lock style operation to check the value is below the
+    // threshold then do a compare-and-swap to make sure it has not changed in
+    // between
+    // http://gridgain.blogspot.co.uk/2011/06/even-better-atomicinteger-and.html
+    while (true) {
+        long int current = value->load();
+        if (threshold > current) {
+            // according to the docs, a weak exchange can spuriously fail
+            // http://en.cppreference.com/w/cpp/atomic/atomic/compare_exchange
+            if (value->compare_exchange_strong(current, current + inc)) {
+               return ATOM_TRUE;
+            }
+        }
+        else {
+            return ATOM_FALSE;
+        }
+    }
+
+    return ATOM_FALSE;
+}
+
+static ERL_NIF_TERM
 get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     std::atomic<long> *value;
@@ -117,10 +162,19 @@ get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     return enif_make_long(env, value->load());
 }
 
+static ERL_NIF_TERM
+is_lock_free(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::atomic<long> value;
+    return value.is_lock_free() ? ATOM_TRUE : ATOM_FALSE;
+}
+
 static ErlNifFunc nif_funcs[] = {
     {"get", 1, get},
     {"inc", 1, inc},
     {"inc2", 2, inc2},
+    {"inc_if_less_than", 3, inc_if_less_than},
+    {"is_lock_free", 0, is_lock_free},
     {"new_counter", 0, new_counter}
 };
 

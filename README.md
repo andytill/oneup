@@ -2,7 +2,7 @@
 
 NIF powered, lock-free global counters for erlang using the c++11 atomic package.
 
-The aim of oneup was to create an alternative to `ets:update_counter` with improved throughput for multiple writers without the lock contention that can happen with ets.
+Oneup is an alternative to `ets:update_counter` with improved throughput for multiple writers without the lock contention that can happen with ets.
 
 ### Status
 
@@ -35,4 +35,4 @@ The benchnmark suite can be run by executing the following from the oneup direct
 
     make perfs
 
-This runs a benchmarks of oneup and `ets:update_counter` tests.
+This runs a benchmarks of oneup and `ets:update_counter` tests. Testing has shown that oneup can achieve upto 100 times the throughput of ets when multiple processes write to a single key.

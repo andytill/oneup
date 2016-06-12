@@ -1,7 +1,12 @@
 PROJECT = oneup
 
 CC = g++ 
-CFLAGS ?= -O3 -std=c++11 -finline-functions -Wall
+OS := $(shell uname)
+ifeq ($(OS), Darwin)
+    CFLAGS ?= -O3 -std=c++11 -Wl,-undefined,dynamic_lookup -Wall
+else
+    CFLAGS ?= -O3 -std=c++11 -finline-functions -Wall
+endif
 
 include erlang.mk
 

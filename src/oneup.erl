@@ -3,6 +3,7 @@
 -export([get/1]).
 -export([inc/1]).
 -export([inc2/2]).
+-export([set/2]).
 -export([inc_if_less_than/3]).
 -export([is_lock_free/0]).
 -export([new_counter/0]).
@@ -33,6 +34,10 @@ inc(_) ->
 -spec inc2(Oneup::oneup(), Increment::integer()) -> ok.
 inc2(_,_) ->
     erlang:nif_error(?LINE).
+
+-spec set(Oneup::oneup(), NewValue::integer()) -> ok.
+set(_,_) ->
+  erlang:nif_error(?LINE).
 
 %% Increment this counter by `Inc' if the current value is less than
 %% the value of `Threshold'.
@@ -154,6 +159,38 @@ spam_inc_conc(Self,_,0) ->
 spam_inc_conc(Self,Counter,N) ->
     oneup:inc(Counter),
     spam_inc_conc(Self,Counter,N-1).
+
+horse_oneup_set() ->
+  Counter = oneup:new_counter(),
+  spam_set(Counter,0),
+  ?ITERATIONS = oneup:get(Counter).
+
+spam_set(Counter,?ITERATIONS) ->
+  oneup:set(Counter, ?ITERATIONS);
+spam_set(Counter,N) when N < ?ITERATIONS->
+  oneup:set(Counter, N),
+  spam_set(Counter, N+1).
+
+horse_oneup_concurrent_set() ->
+  Self = self(),
+  Counter = oneup:new_counter(),
+  Num_procs = 8,
+  Seq = lists:seq(1, Num_procs),
+  [spawn_link(fun() -> spam_set_conc(Self,Counter,0) end) || _ <- Seq],
+  [begin receive
+           test_done ->
+             ok
+         end end || _ <- Seq],
+  ?ITERATIONS = oneup:get(Counter).
+
+spam_set_conc(Self,Counter,?ITERATIONS) ->
+  oneup:set(Counter, ?ITERATIONS),
+  Self ! test_done;
+spam_set_conc(Self,Counter,N) when N < ?ITERATIONS ->
+  oneup:set(Counter, N),
+  spam_set_conc(Self, Counter, N+1).
+
+
 
 horse_oneup_inc_if_less_than() ->
     Counter = oneup:new_counter(),

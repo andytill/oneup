@@ -3,10 +3,12 @@ deps
 *.o
 *.beam
 *.plt
+*.iml
 erl_crash.dump
 ebin
 rel/example_project
 .concrete/DEV_MODE
 .rebar
 priv
+_build
 c_src/env.mk

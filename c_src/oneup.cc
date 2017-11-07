@@ -107,6 +107,26 @@ inc2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+set(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::atomic<long> *value;
+    long int new_value;
+
+    if(argc != 2) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_long(env, argv[1], &new_value)) {
+        return enif_make_badarg(env);
+    }
+    value->operator=((long) new_value);
+
+    return ATOM_OK;
+}
+
+static ERL_NIF_TERM
 inc_if_less_than(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     std::atomic<long> *value;
@@ -179,6 +199,7 @@ static ErlNifFunc nif_funcs[] = {
     {"get", 1, get},
     {"inc", 1, inc},
     {"inc2", 2, inc2},
+    {"set", 2, set},
     {"inc_if_less_than", 3, inc_if_less_than},
     {"is_lock_free", 0, is_lock_free},
     {"new_counter", 0, new_counter},

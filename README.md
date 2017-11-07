@@ -16,7 +16,7 @@ Create a new counter. This returns a reference that is required for further oneu
 C = oneup:new_counter().
 ```
 
-Increment or set the counter. Any number of processes can safely increment or set a counter. A 64 bit signed long is used to hold the value, not an erlang auto number. The maximum value is (2^31-1) or less depending on architecture.
+Increment or set the counter. Any number of processes can safely increment or set a counter. A 64 bit signed long is used to hold the value, not an erlang auto number. The maximum value is (2^63-1) or less depending on architecture.
 
 ```erlang
 ok = oneup:inc(C).

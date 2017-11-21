@@ -27,7 +27,7 @@ ok = oneup:set(C, 200).
 Retrieve the result. Any number of processes can safely read a counter.
 
 ```erlang
-11 = oneup:get().
+200 = oneup:get(C).
 ```
 
 ### Performance

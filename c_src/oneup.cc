@@ -121,9 +121,70 @@ set(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(!enif_get_long(env, argv[1], &new_value)) {
         return enif_make_badarg(env);
     }
-    value->operator=((long) new_value);
 
-    return ATOM_OK;
+    return enif_make_long(env, value->exchange((long) new_value));
+}
+
+static ERL_NIF_TERM
+set_min(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::atomic<long> *value;
+    long int new_value;
+
+    if(argc != 2) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_long(env, argv[1], &new_value)) {
+        return enif_make_badarg(env);
+    }
+
+    while (true) {
+        long int current = value->load();
+        if (current > new_value) {
+            if (value->compare_exchange_strong(current, new_value)) {
+                return enif_make_long(env, (long) new_value);
+            }
+        }
+        else {
+            return enif_make_long(env, current);
+        }
+    }
+
+    return enif_make_long(env, (long) value->load());
+}
+
+static ERL_NIF_TERM
+set_max(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::atomic<long> *value;
+    long int new_value;
+
+    if(argc != 2) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_long(env, argv[1], &new_value)) {
+        return enif_make_badarg(env);
+    }
+
+    while (true) {
+        long int current = value->load();
+        if (current < new_value) {
+            if (value->compare_exchange_strong(current, new_value)) {
+                return enif_make_long(env, (long) new_value);
+            }
+        }
+        else {
+            return enif_make_long(env, current);
+        }
+    }
+
+    return enif_make_long(env, (long) value->load());
 }
 
 static ERL_NIF_TERM
@@ -200,6 +261,8 @@ static ErlNifFunc nif_funcs[] = {
     {"inc", 1, inc},
     {"inc2", 2, inc2},
     {"set", 2, set},
+    {"set_min",2, set_min},
+    {"set_max",2, set_max},
     {"inc_if_less_than", 3, inc_if_less_than},
     {"is_lock_free", 0, is_lock_free},
     {"new_counter", 0, new_counter},

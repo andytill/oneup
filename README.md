@@ -36,7 +36,7 @@ Set min or max.
 Retrieve the result. Any number of processes can safely read a counter.
 
 ```erlang
-11 = oneup:get(C).
+200 = oneup:get(C).
 ```
 
 ### Performance

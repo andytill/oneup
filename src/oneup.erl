@@ -4,6 +4,8 @@
 -export([inc/1]).
 -export([inc2/2]).
 -export([set/2]).
+-export([set_min/2]).
+-export([set_max/2]).
 -export([inc_if_less_than/3]).
 -export([is_lock_free/0]).
 -export([new_counter/0]).
@@ -35,8 +37,16 @@ inc(_) ->
 inc2(_,_) ->
     erlang:nif_error(?LINE).
 
--spec set(Oneup::oneup(), NewValue::integer()) -> ok.
+-spec set(Oneup::oneup(), NewValue::integer()) -> integer().
 set(_,_) ->
+  erlang:nif_error(?LINE).
+
+-spec set_min(Oneup::oneup(), NewValue::integer()) -> integer().
+set_min(_,_) ->
+  erlang:nif_error(?LINE).
+
+-spec set_max(Oneup::oneup(), NewValue::integer()) -> integer().
+set_max(_,_) ->
   erlang:nif_error(?LINE).
 
 %% Increment this counter by `Inc' if the current value is less than
@@ -128,6 +138,7 @@ priv_path_env()->
 -ifdef(PERF).
 
 -define(ITERATIONS, 100000).
+-define(HALF_ITERATIONS, 50000).
 -define(ITERATIONS_QUICK, ?ITERATIONS).
 
 horse_oneup_inc() ->
@@ -162,13 +173,15 @@ spam_inc_conc(Self,Counter,N) ->
 
 horse_oneup_set() ->
   Counter = oneup:new_counter(),
-  spam_set(Counter,0),
+  spam_set(Counter,1),
   ?ITERATIONS = oneup:get(Counter).
 
 spam_set(Counter,?ITERATIONS) ->
-  oneup:set(Counter, ?ITERATIONS);
+  Prev = ?ITERATIONS - 1,
+  Prev = oneup:set(Counter, ?ITERATIONS);
 spam_set(Counter,N) when N < ?ITERATIONS->
-  oneup:set(Counter, N),
+  Prev = N - 1,
+  Prev = oneup:set(Counter, N),
   spam_set(Counter, N+1).
 
 horse_oneup_concurrent_set() ->
@@ -190,6 +203,78 @@ spam_set_conc(Self,Counter,N) when N < ?ITERATIONS ->
   oneup:set(Counter, N),
   spam_set_conc(Self, Counter, N+1).
 
+
+horse_oneup_set_max() ->
+  Counter = oneup:new_counter(),
+  oneup:set(Counter, ?HALF_ITERATIONS),
+  spam_set_max(Counter, 0),
+  ?ITERATIONS = oneup:get(Counter).
+
+spam_set_max(Counter,?ITERATIONS) ->
+  ?ITERATIONS = oneup:set_max(Counter, ?ITERATIONS);
+spam_set_max(Counter,N) when N =< ?HALF_ITERATIONS->
+  ?HALF_ITERATIONS = oneup:set_max(Counter, N),
+  spam_set_max(Counter, N+1);
+spam_set_max(Counter,N) when N > ?HALF_ITERATIONS->
+  N = oneup:set_max(Counter, N),
+  spam_set_max(Counter, N+1).
+
+
+horse_oneup_concurrent_set_max() ->
+  Self = self(),
+  Counter = oneup:new_counter(),
+  Num_procs = 80,
+  Seq = lists:seq(1, Num_procs),
+  [spawn_link(fun() -> spam_set_max_conc(Self,Counter,0) end) || _ <- Seq],
+  [begin receive
+           test_done ->
+             ok
+         end end || _ <- Seq],
+  ?ITERATIONS = oneup:get(Counter).
+
+spam_set_max_conc(Self,Counter,?ITERATIONS) ->
+  ?ITERATIONS = oneup:set_max(Counter, ?ITERATIONS),
+  Self ! test_done;
+spam_set_max_conc(Self,Counter,N) ->
+  C = oneup:set_max(Counter, N),
+  true = C >= N,
+  spam_set_max_conc(Self, Counter, N + 1).
+
+
+horse_oneup_set_min() ->
+  Counter = oneup:new_counter(),
+  oneup:set(Counter, ?HALF_ITERATIONS),
+  spam_set_min(Counter, ?ITERATIONS),
+  0 = oneup:get(Counter).
+
+spam_set_min(Counter, 0) ->
+  0 = oneup:set_min(Counter, 0);
+spam_set_min(Counter,N) when N >= ?HALF_ITERATIONS->
+  ?HALF_ITERATIONS = oneup:set_min(Counter, N),
+  spam_set_min(Counter, N-1);
+spam_set_min(Counter,N) when N < ?HALF_ITERATIONS->
+  N = oneup:set_min(Counter, N),
+  spam_set_min(Counter, N-1).
+
+horse_oneup_concurrent_set_min() ->
+  Self = self(),
+  Counter = oneup:new_counter(),
+  Num_procs = 80,
+  Seq = lists:seq(1, Num_procs),
+  [spawn_link(fun() -> spam_set_min_conc(Self,Counter,?ITERATIONS) end) || _ <- Seq],
+  [begin receive
+           test_done ->
+             ok
+         end end || _ <- Seq],
+  0 = oneup:get(Counter).
+
+spam_set_min_conc(Self,Counter,0) ->
+  0 = oneup:set_min(Counter, ?ITERATIONS),
+  Self ! test_done;
+spam_set_min_conc(Self,Counter,N) ->
+  C = oneup:set_min(Counter, N),
+  true = C =< N,
+  spam_set_min_conc(Self, Counter, N-1).
 
 
 horse_oneup_inc_if_less_than() ->

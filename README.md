@@ -19,9 +19,18 @@ C = oneup:new_counter().
 Increment or set the counter. Any number of processes can safely increment or set a counter. A 64 bit signed long is used to hold the value, not an erlang auto number. The maximum value is (2^63-1) or less depending on architecture.
 
 ```erlang
-ok = oneup:inc(C).
-ok = oneup:inc2(C, 10).
-ok = oneup:set(C, 200).
+ok = oneup:inc(C). %% value of C becomes 1
+ok = oneup:inc2(C, 10).  %% value of C becomes 11
+11 = oneup:set(C, 200). %% set to 200 and return previous value
+```
+
+Set min or max. 
+
+```
+300 = oneup:set_max(C, 300). %% set to max of current and new value and return max
+300 = oneup:set_max(C, 100).
+100 = oneup:set_min(C, 100). %% set to min of current and new value and return min
+100 = oneup:set_min(C, 300).
 ```
 
 Retrieve the result. Any number of processes can safely read a counter.

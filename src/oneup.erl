@@ -3,6 +3,8 @@
 -export([get/1]).
 -export([inc/1]).
 -export([inc2/2]).
+-export([get_and_inc/1]).
+-export([get_and_inc2/2]).
 -export([set/2]).
 -export([set_min/2]).
 -export([set_max/2]).
@@ -36,6 +38,14 @@ inc(_) ->
 -spec inc2(Oneup::oneup(), Increment::integer()) -> ok.
 inc2(_,_) ->
     erlang:nif_error(?LINE).
+
+-spec get_and_inc(Oneup :: oneup()) -> integer().
+get_and_inc(_) ->
+  erlang:nif_error(?LINE).
+
+-spec get_and_inc2(Oneup :: oneup(), Increment :: integer()) -> integer().
+get_and_inc2(_, _) ->
+  erlang:nif_error(?LINE).
 
 -spec set(Oneup::oneup(), NewValue::integer()) -> integer().
 set(_,_) ->
@@ -170,6 +180,50 @@ spam_inc_conc(Self,_,0) ->
 spam_inc_conc(Self,Counter,N) ->
     oneup:inc(Counter),
     spam_inc_conc(Self,Counter,N-1).
+
+
+horse_oneup_get_and_inc() ->
+  Counter = oneup:new_counter(),
+  spam_get_and_inc(Counter, ?ITERATIONS),
+  ?ITERATIONS = oneup:get(Counter).
+
+spam_get_and_inc(_, 0) ->
+  ok;
+spam_get_and_inc(Counter, N) ->
+  _ = oneup:get_and_inc(Counter),
+  spam_get_and_inc(Counter, N - 1).
+
+horse_oneup_concurrent_get_and_inc() ->
+  Self = self(),
+  Counter = oneup:new_counter(),
+  Num_procs = 8,
+  Seq = lists:seq(1, Num_procs),
+  [spawn_link(fun() -> spam_get_and_inc_conc(Self, Counter, ?ITERATIONS) end) || _ <- Seq],
+  [begin receive
+           test_done ->
+             ok
+         end end || _ <- Seq],
+  Expected = (?ITERATIONS * Num_procs),
+  Expected = oneup:get(Counter).
+
+spam_get_and_inc_conc(Self, _, 0) ->
+  Self ! test_done;
+spam_get_and_inc_conc(Self, Counter, N) ->
+  oneup:get_and_inc(Counter),
+  spam_get_and_inc_conc(Self, Counter, N - 1).
+
+
+%%horse_oneup_get_and_inc2() ->
+%%  Counter = oneup:new_counter(),
+%%  spam_get_and_inc2(Counter, ?ITERATIONS),
+%%  ?ITERATIONS = oneup:get(Counter).
+%%
+%%spam_get_and_inc2(_, 0) ->
+%%  ok;
+%%spam_get_and_inc2(Counter, N) ->
+%%  _ = oneup:get_and_inc2(Counter),
+%%  spam_get_and_inc2(Counter, N - 1).
+
 
 horse_oneup_set() ->
   Counter = oneup:new_counter(),

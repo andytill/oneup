@@ -83,7 +83,7 @@ inc(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
     value->operator++();
 
-    return enif_make_long(env, value->operator++());
+    return ATOM_OK;
 }
 
 static ERL_NIF_TERM
@@ -101,9 +101,45 @@ inc2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(!enif_get_long(env, argv[1], &inc)) {
         return enif_make_badarg(env);
     }
-    
+    value->operator+=((long)inc);
+
+    return ATOM_OK;
+}
+
+static ERL_NIF_TERM
+get_and_inc(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::atomic<long> *value;
+
+    if(argc != 1) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
+
+    return enif_make_long(env, value->operator++());
+}
+
+static ERL_NIF_TERM
+get_and_inc2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::atomic<long> *value;
+    long int inc;
+
+    if(argc != 2) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_resource(env, argv[0], ONEUP_RESOURCE_TYPE, (void**) &value)) {
+        return enif_make_badarg(env);
+    }
+    if(!enif_get_long(env, argv[1], &inc)) {
+        return enif_make_badarg(env);
+    }
+
     return enif_make_long(env, value->operator+=((long)inc));
 }
+
 
 static ERL_NIF_TERM
 set(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -259,6 +295,8 @@ static ErlNifFunc nif_funcs[] = {
     {"get", 1, get},
     {"inc", 1, inc},
     {"inc2", 2, inc2},
+    {"get_and_inc", 1, get_and_inc},
+    {"get_and_inc2", 2, get_and_inc2},
     {"set", 2, set},
     {"set_min",2, set_min},
     {"set_max",2, set_max},

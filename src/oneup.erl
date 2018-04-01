@@ -212,19 +212,6 @@ spam_get_and_inc_conc(Self, Counter, N) ->
   oneup:get_and_inc(Counter),
   spam_get_and_inc_conc(Self, Counter, N - 1).
 
-
-%%horse_oneup_get_and_inc2() ->
-%%  Counter = oneup:new_counter(),
-%%  spam_get_and_inc2(Counter, ?ITERATIONS),
-%%  ?ITERATIONS = oneup:get(Counter).
-%%
-%%spam_get_and_inc2(_, 0) ->
-%%  ok;
-%%spam_get_and_inc2(Counter, N) ->
-%%  _ = oneup:get_and_inc2(Counter),
-%%  spam_get_and_inc2(Counter, N - 1).
-
-
 horse_oneup_set() ->
   Counter = oneup:new_counter(),
   spam_set(Counter,1),

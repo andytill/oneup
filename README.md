@@ -22,6 +22,8 @@ Increment or set the counter. Any number of processes can safely increment or se
 ok = oneup:inc(C). %% value of C becomes 1
 ok = oneup:inc2(C, 10).  %% value of C becomes 11
 11 = oneup:set(C, 200). %% set to 200 and return previous value
+201 = oneup:get_and_inc(C). %% value of C becomes 201
+401 = oneup:get_and_inc(C,200). %% value of C becomes 401
 ```
 
 Set min or max. 

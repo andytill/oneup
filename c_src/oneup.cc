@@ -83,7 +83,7 @@ inc(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
     value->operator++();
 
-    return ATOM_OK;
+    return enif_make_long(env, value->operator++());
 }
 
 static ERL_NIF_TERM
@@ -101,9 +101,8 @@ inc2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(!enif_get_long(env, argv[1], &inc)) {
         return enif_make_badarg(env);
     }
-    value->operator+=((long)inc);
-
-    return ATOM_OK;
+    
+    return enif_make_long(env, value->operator+=((long)inc));
 }
 
 static ERL_NIF_TERM

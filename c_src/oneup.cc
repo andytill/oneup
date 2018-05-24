@@ -107,7 +107,7 @@ inc2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
-get_and_inc(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+inc_and_get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     std::atomic<long> *value;
 
@@ -122,7 +122,7 @@ get_and_inc(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
-get_and_inc2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+inc_and_get2(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     std::atomic<long> *value;
     long int inc;
@@ -295,8 +295,8 @@ static ErlNifFunc nif_funcs[] = {
     {"get", 1, get},
     {"inc", 1, inc},
     {"inc2", 2, inc2},
-    {"get_and_inc", 1, get_and_inc},
-    {"get_and_inc2", 2, get_and_inc2},
+    {"inc_and_get", 1, inc_and_get},
+    {"inc_and_get2", 2, inc_and_get2},
     {"set", 2, set},
     {"set_min",2, set_min},
     {"set_max",2, set_max},

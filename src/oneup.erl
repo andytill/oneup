@@ -112,7 +112,6 @@ init() ->
                 end;
             SoNameFromEnv when is_list(SoNameFromEnv) -> SoNameFromEnv
         end,
-    io:format("Loading ~p~n", [SoName]),
     erlang:load_nif(SoName, 0).
 
 priv_path_env()->
@@ -126,7 +125,7 @@ priv_path_env()->
         _NotFound -> undefined
       end;
     {ok, InvalidPrivPath} ->
-      io:format("Expected priv_path env as string got ~p~n", [InvalidPrivPath]),
+      error_logger:format("Expected priv_path env as string got ~p", [InvalidPrivPath]),
       undefined
   end.
 
